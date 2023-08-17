@@ -1,0 +1,1758 @@
+Source Code Of Vaccination Center
+1.Controller
+1.1.AdminRestController
+package com.coviwin.controller;
+
+import java.security.PublicKey;
+import java.util.List;
+
+import javax.swing.text.DefaultHighlighter.DefaultHighlightPainter;
+import javax.validation.Valid;
+import javax.validation.constraints.Digits;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+@@ -18,12 +18,23 @@
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.coviwin.exception.ApppintmentException;
+import com.coviwin.exception.IdCardException;
+import com.coviwin.exception.MemberException;
+import com.coviwin.exception.VaccinationCenterException;
+import com.coviwin.exception.VaccineException;
+import com.coviwin.exception.VaccineInventoryException;
+import com.coviwin.model.Appointment;
+//import com.coviwin.exception.VaccineInventoryException;
+import com.coviwin.model.IdCard;
+import com.coviwin.model.Member;
+import com.coviwin.model.VaccinationCenter;
+import com.coviwin.model.Vaccine;
+import com.coviwin.model.VaccineCount;
+import com.coviwin.model.VaccineInventory;
+import com.coviwin.service.AppointmentService;
+import com.coviwin.service.IdCardService;
+import com.coviwin.service.MemberService;
+import com.coviwin.service.VaccinationCenterService;
+import com.coviwin.service.VaccineInventoryService;
+import com.coviwin.service.VaccineService;
+@@ -44,10 +55,16 @@ public class AdminRestController {
+	@Autowired
+	public VaccineService vService; 
+
+	@Autowired
+	public MemberService memberService;
+
+	@Autowired
+	public AppointmentService appointmentService;
+
+//	Vaccination center Service method
+
+	@GetMapping(value = "/centers")
+	public ResponseEntity<List<VaccinationCenter>> allVaccinationCenter(){
+	public ResponseEntity<List<VaccinationCenter>> allVaccinationCenter() throws VaccinationCenterException{
+
+		List<VaccinationCenter> vcLS = vaccinationCenter.getAllVaccineCenters();
+
+@@ -56,15 +73,16 @@ public ResponseEntity<List<VaccinationCenter>> allVaccinationCenter(){
+	}
+
+	@GetMapping(value="/center")
+	public ResponseEntity<VaccinationCenter> getVaccineCenter(@RequestParam Integer id){
+	public ResponseEntity<VaccinationCenter> getVaccineCenter(@RequestParam Integer id) throws VaccinationCenterException{
+
+		VaccinationCenter vcLS = vaccinationCenter.getVaccineCenters(id);
+		return  new ResponseEntity<VaccinationCenter>( vcLS , HttpStatus.FOUND );
+
+	}
+
+	@PostMapping(value="/center")
+	public ResponseEntity< VaccinationCenter> addVaccineCenter( @RequestBody VaccinationCenter vaccinationCenter ){
+	public ResponseEntity< VaccinationCenter> addVaccineCenter( @Valid @RequestBody VaccinationCenter vaccinationCenter ) throws VaccinationCenterException{
+
+
+		VaccinationCenter vCenter = this.vaccinationCenter.addVaccineCenter(vaccinationCenter);
+
+@@ -73,7 +91,7 @@ public ResponseEntity< VaccinationCenter> addVaccineCenter( @RequestBody Vaccina
+	}
+
+	@PutMapping(value = "/center")
+	public ResponseEntity< VaccinationCenter > updateCenter( @RequestBody VaccinationCenter vc ) {
+	public ResponseEntity< VaccinationCenter > updateCenter( @Valid @RequestBody VaccinationCenter vc ) throws VaccinationCenterException {
+
+		VaccinationCenter retvc =  vaccinationCenter.updateVaccineCenter(vc);
+
+@@ -82,7 +100,7 @@ public ResponseEntity< VaccinationCenter > updateCenter( @RequestBody Vaccinatio
+	}
+
+	@DeleteMapping(value = "/center")
+	public ResponseEntity<VaccinationCenter> deleteCenter( @RequestBody VaccinationCenter center ){
+	public ResponseEntity<VaccinationCenter> deleteCenter( @Valid @RequestBody VaccinationCenter center ) throws VaccinationCenterException{
+
+		VaccinationCenter vCenter =  vaccinationCenter.deleteVaccineCenter( center );
+
+@@ -92,14 +110,16 @@ public ResponseEntity<VaccinationCenter> deleteCenter( @RequestBody VaccinationC
+//	Id Card Service method
+
+	@GetMapping("/getId")
+	public ResponseEntity< IdCard > getIdCardByAdhar( @RequestParam(value = "adhar") Long adharLong ) throws IdCardException{
+	public ResponseEntity< List<IdCard> > getIdCardByAdhar( @Valid
+													  @Digits(integer = 12,fraction = 12,message = "Length must be 12")
+													  @RequestParam(value = "adhar") Long adharLong ) throws IdCardException{
+
+	 	IdCard idCard = idCardService.getAdharCardByNo(adharLong);
+		List<IdCard> idCard = idCardService.getAdharCardByNo(adharLong);
+
+		return new ResponseEntity<>( idCard ,  HttpStatus.FOUND );
+	}
+
+	@GetMapping("/getId")
+	@GetMapping("/getIdByPan")
+	public ResponseEntity< IdCard > getIdCardByPan( @RequestParam String pan ) throws IdCardException{
+
+	 	IdCard idCard = idCardService.getPanCardByNumber( pan );
+@@ -108,7 +128,7 @@ public ResponseEntity< IdCard > getIdCardByPan( @RequestParam String pan ) throw
+	}
+
+	@PostMapping("/addId")
+	public ResponseEntity< IdCard > addId( @RequestBody IdCard id ) throws IdCardException{
+	public ResponseEntity< IdCard > addId( @Valid @RequestBody IdCard id ) throws IdCardException{
+
+	 	IdCard idCard = idCardService.addIdCard( id );
+
+@@ -119,41 +139,189 @@ public ResponseEntity< IdCard > addId( @RequestBody IdCard id ) throws IdCardExc
+//	Vaccine Inventory Service Method
+
+	@GetMapping("/vaccineInventories")
+	public ResponseEntity<List< VaccineInventory >> getAllVacciceInventory() {
+	public ResponseEntity<List< VaccineInventory >> getAllVacciceInventory() throws VaccineInventoryException {
+
+		List< VaccineInventory > vInventory =  vaccineInventoryService.allVaccineInventory();
+
+		return new ResponseEntity<List<VaccineInventory>>( vInventory , HttpStatus.FOUND );
+	}
+
+	@GetMapping("/vaccineInventories/vaccine")
+	public ResponseEntity< List< VaccineInventory > > getVaccineInventoryByVaccine( @RequestBody Vaccine vaccine ){
+	public ResponseEntity< List< VaccineInventory > > getVaccineInventoryByVaccine( @Valid @RequestBody Vaccine vaccine ) throws VaccineInventoryException{
+
+
+		 List<VaccineInventory> vi = vaccineInventoryService.getVaccineInventoryByVaccine(vaccine);
+		 return new ResponseEntity<List<VaccineInventory>>(  vi , HttpStatus.FOUND );
+	}
+
+
+	@DeleteMapping("/vaccineInventory/vi")
+	public ResponseEntity<Boolean> deleteVaccineInventory( @PathVariable("vi") Integer arg ){
+	public ResponseEntity<Boolean> deleteVaccineInventory( @PathVariable("vi") Integer arg ) throws VaccineInventoryException{
+
+		Boolean fBoolean =  vaccineInventoryService.deleteVaccineInventory( arg );
+
+		return new ResponseEntity<Boolean>( fBoolean ,HttpStatus.ACCEPTED );
+	} 
+
+	@PostMapping("/vaccineInventory/{centerId}")
+	public ResponseEntity<VaccineInventory> addInventoryByCenter( @Valid @RequestBody VaccineInventory vInventory, @PathVariable("centerId") Integer centerId) throws VaccineInventoryException {
+
+		VaccineInventory vaccineInventory =  vaccineInventoryService.addVaccineInventoryByCenter( centerId , vInventory);
+
+
+		return new ResponseEntity<VaccineInventory>( vaccineInventory , HttpStatus.ACCEPTED );
+	}
+
+	@PostMapping("/vaccineInventory")
+	public ResponseEntity< VaccineInventory > updateVaccineCount( @Valid @RequestBody VaccineInventory vi , VaccineCount vc ) throws VaccineInventoryException{
+
+		VaccineInventory vInventory = vaccineInventoryService.addVaccineCount( vi , vc );
+
+
+		return new ResponseEntity<VaccineInventory>( vInventory , HttpStatus.ACCEPTED );
+
+	}
+	@PutMapping("/vaccineInventory")
+	public ResponseEntity< VaccineInventory > updateVaccineInventory( @Valid @RequestParam Integer id, @RequestBody VaccineInventory vi ) throws VaccineInventoryException{
+
+		VaccineInventory vaccineInventory = vaccineInventoryService.updateVaccineInventory(id, vi);
+
+		return new ResponseEntity<VaccineInventory>( vaccineInventory , HttpStatus.ACCEPTED );
+	}
+
+
+
+//	Vaccine Service Method
+
+	@PostMapping("/vaccine")
+	public ResponseEntity<Vaccine> addVaccine(@RequestBody Vaccine vaccine){
+	public ResponseEntity<Vaccine> addVaccine( @Valid @RequestBody Vaccine vaccine) throws VaccineException{
+
+		 Vaccine v = vService.addVaccine(vaccine);
+
+		 return new ResponseEntity<>( v , HttpStatus.CREATED );
+
+	}
+
+	@GetMapping("/vaccines")
+	public ResponseEntity< List< Vaccine >> getAllVaccine() throws VaccineException {
+
+		List< Vaccine > vaccine =  vService.allVaccine();
+
+
+		return new ResponseEntity< List<Vaccine> >( vaccine ,  HttpStatus.ACCEPTED);
+	}
+
+	@DeleteMapping("/vaccine")
+	public ResponseEntity< Boolean > deleteVaccine( @Valid @RequestBody Vaccine v ) throws VaccineException{
+
+		Boolean boolean1 = vService.deleteVaccine( v );
+
+
+		return new ResponseEntity<Boolean>( boolean1 , HttpStatus.ACCEPTED );
+	} 
+
+	@GetMapping("/vaccine/{vaccine}")
+	public ResponseEntity< Vaccine > getVaccineById( @PathVariable("vaccine") Integer id ) throws VaccineException{
+
+		Vaccine vaccine =  vService.getVaccineById( id );
+
+		return new ResponseEntity<Vaccine>( vaccine  , HttpStatus.FOUND );
+	}
+
+	@GetMapping("/vaccine")
+	public ResponseEntity< List< Vaccine > > getVaccineByName( @RequestParam String name) throws VaccineException{
+
+		List< Vaccine > vaccine = vService.getVaccineByName(name);
+
+		return new ResponseEntity<List< Vaccine >>( vaccine , HttpStatus.ACCEPTED);
+	}
+
+
+//	Member Service
+
+	@GetMapping( "/memberById" )
+	public ResponseEntity< Member > getMemberById( @RequestParam Integer id ) throws MemberException{
+
+		Member member = memberService.getMemberbyId(id);
+
+
+
+		return new ResponseEntity<Member>( member , HttpStatus.FOUND );
+	}
+
+//
+
+	@PostMapping("/member")
+	public ResponseEntity< Member > addMember( @Valid @RequestBody  Member member ) throws MemberException{
+
+		Member member2 = memberService.addMember(member);
+
+		return new  ResponseEntity<>( member2 , HttpStatus.ACCEPTED );
+
+	}
+
+	@DeleteMapping("/member")
+	public ResponseEntity< Boolean > deleteMember( @Valid @RequestBody Member member ) throws MemberException{
+
+		Boolean member2 =  memberService.deleteMember(member);
+
+		return new ResponseEntity<Boolean>( member2 , HttpStatus.ACCEPTED );
+	}
+
+
+	@GetMapping("/member")
+	public ResponseEntity< Member > getMemberByPanNo( @RequestParam  String p ) throws MemberException{
+
+		Member member = memberService.getMemberByPanNo(p);
+
+		return new ResponseEntity<Member>( member , HttpStatus.ACCEPTED );
+	}
+
+	@PutMapping("/member")
+	public ResponseEntity< Member > updateMember( @Valid @RequestBody Member member) throws MemberException{
+
+		Member member2 = memberService.updateMember(member);
+		return new ResponseEntity<Member>( member2 , HttpStatus.ACCEPTED );
+	}
+
+	@GetMapping( "/memberByAdhar" )
+	public ResponseEntity< Member > getMemberById( @RequestParam Long a ) throws MemberException{
+
+		Member member = memberService.getMemberByAdharNo(a);
+
+		return new ResponseEntity<Member>( member , HttpStatus.FOUND );
+	}
+
+//	AppointmentService Method
+
+	@GetMapping("/appointments")
+	public ResponseEntity< List<Appointment>> getAllAppointment() throws ApppintmentException{
+
+		List<Appointment> ls = appointmentService.allAppointment();
+		return new ResponseEntity<List<Appointment>>( ls , HttpStatus.FOUND );
+	}
+
+	@DeleteMapping("/appointment")
+	public ResponseEntity<Boolean> deleteAppointment( @Valid @RequestBody Appointment appointment ) throws ApppintmentException{
+
+		Boolean appointment2 =  appointmentService.deleteAppointment(appointment);
+		return new ResponseEntity<Boolean>(appointment2 , HttpStatus.ACCEPTED);
+	}
+
+	@GetMapping("/appointment")
+	public ResponseEntity< Appointment > getAppointment ( @RequestParam Long bid ) throws ApppintmentException{
+
+		Appointment appointment =  appointmentService.getAppointment(bid);
+
+		return new ResponseEntity<Appointment>(appointment,HttpStatus.FOUND);
+	}
+
+	@PutMapping("appointment")
+	public ResponseEntity<Appointment> updateAppointment( @Valid @RequestBody Appointment appointment ) throws ApppintmentException{
+
+		Appointment app = appointmentService.updateAppointment(appointment);
+		return new ResponseEntity< Appointment>(app,HttpStatus.ACCEPTED);
+	}
+
+
+}
+
+1.2.MemberRestController
+package com.coviwin.controller;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+import java.util.List;
+
+import javax.validation.Valid;
+
+import com.coviwin.exception.ApppintmentException;
+import com.coviwin.exception.IdCardException;
+import com.coviwin.exception.MemberException;
+import com.coviwin.exception.VaccinationCenterException;
+import com.coviwin.exception.VaccineException;
+import com.coviwin.exception.VaccineRegistrationException;
+import com.coviwin.model.Appointment;
+import com.coviwin.model.IdCard;
+import com.coviwin.model.Member;
+import com.coviwin.model.VaccinationCenter;
+import com.coviwin.model.Vaccine;
+import com.coviwin.model.VaccineRegistration;
+import com.coviwin.service.AppointmentService;
+import com.coviwin.service.IdCardService;
+import com.coviwin.service.MemberService;
+import com.coviwin.service.VaccinationCenterService;
+import com.coviwin.service.VaccineRegistrationService;
+import com.coviwin.service.VaccineService;
+
+
+
+@RestController
+@RequestMapping("/user")
+public class MemberRestController {
+
+	@Autowired
+	private AppointmentService appointment;
+
+	@Autowired
+	 private MemberService memberSer;
+
+	@Autowired
+	 private  IdCardService idcard;
+
+	@Autowired
+	private VaccinationCenterService vaccincenterSer;
+
+	@Autowired
+	private VaccineRegistrationService vaccinRegSer;
+
+	@Autowired
+	private VaccineService vaccinser;
+
+	// idcard
+	@PostMapping("/idCard")
+	public ResponseEntity<IdCard> addidCardHandler(@Valid @RequestBody IdCard card) throws IdCardException{
+		IdCard addId= idcard.addIdCard(card);
+		return new ResponseEntity<IdCard>(addId, HttpStatus.CREATED);
+
+	}
+
+	 @GetMapping("/adharCard/{adharNo}")
+	 public ResponseEntity<List<IdCard>> getAdharBynoHandler(@PathVariable  Long adharNo) throws IdCardException{
+		 List<IdCard> adhardetails = idcard.getAdharCardByNo(adharNo);
+		 return new ResponseEntity<List<IdCard>>(adhardetails, HttpStatus.FOUND);
+
+	 }
+
+	 @GetMapping("/panCard/{panNo}")
+	 public ResponseEntity<IdCard> getPanByNoHandler(@PathVariable String panNo) throws IdCardException{
+		 IdCard pandetails= idcard.getPanCardByNumber(panNo);
+		 return new ResponseEntity<IdCard>(pandetails, HttpStatus.FOUND); 
+	 }
+
+	 //appointment
+
+		@PostMapping("/appointment")
+		public ResponseEntity<Appointment> addAppointmentHandler(@Valid @RequestBody Appointment app) throws ApppintmentException {
+			Appointment appoint =appointment.addAppointment(app);
+			return new ResponseEntity<Appointment>(appoint, HttpStatus.CREATED);
+		}
+
+		@GetMapping("/appointment/{bookingID}")
+		public ResponseEntity<Appointment> getAppointmentHandler(@PathVariable("bookingID") Long bookingID) throws ApppintmentException {
+			return new ResponseEntity<Appointment>(appointment.getAppointment(bookingID),HttpStatus.FOUND);
+		}
+
+
+		@DeleteMapping("/appointment")
+		public ResponseEntity<Boolean> deleteAppoinmentHandler(@Valid @RequestBody Appointment app) throws ApppintmentException{
+			 return new ResponseEntity<Boolean>(appointment.deleteAppointment(app), HttpStatus.OK);
+		}
+
+
+		@PutMapping("/appointment")
+		public ResponseEntity<Appointment> updateAppointmentHandler(@Valid @RequestBody Appointment app ) throws ApppintmentException {
+			Appointment updateAppointment =appointment.updateAppointment(app);
+			return new ResponseEntity<Appointment>(updateAppointment,HttpStatus.OK);
+		}
+
+
+		// memberservice 
+
+		@PostMapping("/member")
+		public ResponseEntity<Member> addMemberHandler(@Valid @RequestBody Member member) throws MemberException {
+			 Member addmember=memberSer.addMember(member);
+			 return new ResponseEntity<Member>(addmember,HttpStatus.CREATED);
+
+		}
+
+		@DeleteMapping("/member")
+		public ResponseEntity<Boolean> deleteMemberHandler(@Valid @RequestBody Member member) throws MemberException{
+
+			return new  ResponseEntity<Boolean>(memberSer.deleteMember(member), HttpStatus.OK);
+
+		}
+
+		@GetMapping("/memberId/{IdCardId}")
+		public ResponseEntity<Member> getMemberByIdHandler(@PathVariable("IdCardId") Integer IdCardId) throws MemberException{
+			 Member getmemberbyId=memberSer.getMemberbyId(IdCardId);
+			 return new ResponseEntity<Member>(getmemberbyId,HttpStatus.FOUND);
+
+		}
+
+		@GetMapping("/memberAdhar/{adharNo}")
+		public ResponseEntity<Member> getMemberByAdharHandler(@PathVariable("adharNo") Long adharNo) throws MemberException{
+			 Member getmemberbyadhar=memberSer.getMemberByAdharNo(adharNo);
+			 return new ResponseEntity<Member>(getmemberbyadhar,HttpStatus.FOUND);
+
+		}
+
+		@GetMapping("/memberPan/{panNo}")
+		public ResponseEntity<Member> getMemberByPanHandler(@PathVariable("panNo") String panNo) throws MemberException{
+			 Member getmemberbyPan=memberSer.getMemberByPanNo(panNo);
+			 return new ResponseEntity<Member>(getmemberbyPan,HttpStatus.FOUND);
+
+		}
+
+		@PutMapping("/member")
+		public ResponseEntity<Member> updateMemberHandler(@Valid @RequestBody Member member ) throws MemberException {
+			Member updateMember =memberSer.updateMember(member);
+			return new ResponseEntity<Member>(updateMember,HttpStatus.OK);
+		}
+
+
+		//vaccinCentral
+		// list pending
+
+
+		@GetMapping("/vaccincenter")
+		public ResponseEntity<List<VaccinationCenter>> getAllVacciceInventory() throws VaccinationCenterException {
+
+		    List<VaccinationCenter> vInventory =  vaccincenterSer.getAllVaccineCenters();
+
+			return new ResponseEntity<List<VaccinationCenter>>( vInventory , HttpStatus.FOUND );
+		}
+
+
+		@PostMapping("/vaccincenter")
+		public ResponseEntity<VaccinationCenter> addVaccineCenterHandler(@Valid @RequestBody  VaccinationCenter vaccincenter) throws VaccinationCenterException {
+			VaccinationCenter addVCenter=vaccincenterSer.addVaccineCenter(vaccincenter);
+			 return new ResponseEntity<VaccinationCenter>(addVCenter,HttpStatus.CREATED);
+
+		}
+
+
+		@DeleteMapping("/vaccincenter")
+		public ResponseEntity<VaccinationCenter> deletevaccinCenterHandler(@Valid @RequestBody VaccinationCenter vaccincenter) throws VaccinationCenterException {
+
+			return new  ResponseEntity<VaccinationCenter>(vaccincenterSer.deleteVaccineCenter(vaccincenter), HttpStatus.OK);
+
+		}
+
+		@GetMapping("/vaccincenter/{centerid}")
+		public ResponseEntity<VaccinationCenter> getVaccineCenterHandler(@PathVariable("centerid") Integer centerid) throws VaccinationCenterException {
+			VaccinationCenter getVCenter=vaccincenterSer.getVaccineCenters(centerid);
+			 return new ResponseEntity<VaccinationCenter>(getVCenter,HttpStatus.FOUND);
+
+		}
+
+		@PutMapping("/vaccincenter")
+		public ResponseEntity<VaccinationCenter> updateVaccineCenterHandler(@Valid @RequestBody  VaccinationCenter vaccincenter) throws VaccinationCenterException {
+			VaccinationCenter addVCenter=vaccincenterSer.updateVaccineCenter(vaccincenter);
+			 return new ResponseEntity<VaccinationCenter>(addVCenter,HttpStatus.OK);
+
+		}
+
+
+		// vaccinRegestration Serervice method
+
+		// get vacin reg pending
+
+		@DeleteMapping("/vaccineReg")
+		public ResponseEntity<Boolean> deleteVaccineReg(@Valid @RequestBody VaccineRegistration vaccinreg) throws VaccineRegistrationException{
+			return new ResponseEntity<Boolean>(vaccinRegSer.deleteVaccineRegistration(vaccinreg),HttpStatus.OK);
+		}
+
+		@GetMapping("/vaccineReg")
+		public ResponseEntity<VaccineRegistration> getVaccineReg(@Valid @RequestBody Long mobileNo) throws VaccineRegistrationException{
+			VaccineRegistration getvaccinereg=vaccinRegSer.getVaccineRegistration(mobileNo);
+			return new ResponseEntity<VaccineRegistration>(getvaccinereg,HttpStatus.FOUND);
+
+		}
+
+		@PutMapping("/vaccineReg")
+		public ResponseEntity<VaccineRegistration> updateVaccineReg(@Valid @RequestBody VaccineRegistration vaccinreg) throws VaccineRegistrationException{
+			VaccineRegistration updatevaccinereg=vaccinRegSer.updateVaccineRegistration(vaccinreg);
+			return new ResponseEntity<VaccineRegistration>(updatevaccinereg,HttpStatus.OK);
+
+		}
+
+		@GetMapping("/vaccineReg/{mobileNo}")
+		public ResponseEntity<List<Member>> getAllMember (Long mobileNo) throws VaccineRegistrationException{
+
+			List<Member> Vaccine=vaccinRegSer.getAllMember(mobileNo);
+
+			return new ResponseEntity <List<Member>>(Vaccine,HttpStatus.FOUND);
+
+		}
+
+
+
+
+		// vaccineService
+
+		@GetMapping("/vaccineserviceByName/{vaccineName}")
+		public ResponseEntity< List< Vaccine > > getVaccineByname(@Valid @RequestBody String vaccineName) throws VaccineException{
+			List< Vaccine > getvaccinbyname=vaccinser.getVaccineByName(vaccineName);
+			return new ResponseEntity<List< Vaccine >>(getvaccinbyname,HttpStatus.FOUND);
+		}
+
+		@GetMapping("/vaccineserviceById/{vaccineName}")
+		public ResponseEntity<Vaccine> getVaccineById( @Valid @RequestBody Integer vaccineId) throws VaccineException{
+			Vaccine getvaccinbyid = vaccinser.getVaccineById(vaccineId);
+			return new ResponseEntity<Vaccine>(getvaccinbyid,HttpStatus.FOUND);
+		}
+
+
+
+}
+2.Exception
+2.1.AppointmentException
+package com.coviwin.exception;
+
+public class ApppintmentException extends Exception {Va
+	private static final long serialVersionUID = 1L;
+
+	public ApppintmentException() {
+		// TODO Auto-generated constructor stub
+	}
+2.2.ErrorDetail
+package com.coviwin.exception;
+
+import java.time.LocalDate;
+import lombok.Data;
+
+@Data
+public class ErrorDetail {
+
+	private LocalDate timestamp;
+	private String mssg;
+	private String desc;
+
+	public ErrorDetail() {
+		this.timestamp = LocalDate.now();
+	}
+
+	public ErrorDetail(String msgg, String descString) {
+
+		this();
+		this.mssg = msgg;
+		this.desc=descString;
+
+	}
+
+
+
+}
+2.3.GlobalException
+package com.coviwin.exception;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.annotation.ControllerAdvice;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.context.request.WebRequest;
+import org.springframework.web.servlet.NoHandlerFoundException;
+
+@ControllerAdvice
+public class GlobalExceptionHandler {
+
+	@ExceptionHandler(MethodArgumentNotValidException.class)
+	public ResponseEntity< ErrorDetail > methodArgumentNotValidExceptionHandler( MethodArgumentNotValidException manve ){
+
+		return new ResponseEntity<ErrorDetail>
+								( new ErrorDetail( "Validation Error" , manve
+																			.getBindingResult()
+																			.getFieldError()
+																			.getDefaultMessage() ) ,
+																			HttpStatus.BAD_REQUEST );
+	}
+
+	@ExceptionHandler(NoHandlerFoundException.class)
+	public ResponseEntity< ErrorDetail > noHandlerFoundExceptionHandler( NoHandlerFoundException nhe, WebRequest wr ){
+
+		ErrorDetail ed = new ErrorDetail( nhe.getMessage() , wr.getDescription(false) );
+
+		return new ResponseEntity<ErrorDetail>( ed , HttpStatus.BAD_REQUEST );
+
+	}
+
+	@ExceptionHandler(Exception.class)
+	public ResponseEntity< ErrorDetail > exceptionHandler( Exception e , WebRequest wr ){
+
+		ErrorDetail ed = new ErrorDetail( e.getMessage() , wr.getDescription(false) );
+
+		return new ResponseEntity<ErrorDetail>( ed , HttpStatus.BAD_REQUEST );
+
+	}
+
+	@ExceptionHandler(ApppintmentException.class)
+	public ResponseEntity<ErrorDetail> appointmentExceptionHandler( ApppintmentException ae,  WebRequest wr ){
+
+		ErrorDetail ed = new ErrorDetail( ae.getMessage() , wr.getDescription(false) );
+
+		return new ResponseEntity<ErrorDetail>( ed , HttpStatus.BAD_REQUEST );
+	}
+
+
+
+
+	@ExceptionHandler(IdCardException.class)
+	public ResponseEntity<ErrorDetail> idCardExceptionHandler( IdCardException ice , WebRequest wr ){
+
+		ErrorDetail ed = new ErrorDetail( ice.getMessage() , wr.getDescription(false) );
+
+		return new ResponseEntity<ErrorDetail>( ed , HttpStatus.BAD_REQUEST );
+	}
+
+
+
+
+	@ExceptionHandler(MemberException.class)
+	public ResponseEntity<ErrorDetail> memeberExceptionHandler( MemberException me , WebRequest wr ){
+
+		ErrorDetail ed = new ErrorDetail( me.getMessage() , wr.getDescription(false) );
+
+		return new ResponseEntity<ErrorDetail>( ed , HttpStatus.BAD_REQUEST );
+
+	}
+
+
+
+	@ExceptionHandler( VaccineInventoryException.class )
+	public ResponseEntity<ErrorDetail> vaccineInventoryExceptionHandler( VaccineInventoryException ve , WebRequest wr ){
+
+		ErrorDetail ed = new ErrorDetail( ve.getMessage() , wr.getDescription(false) );
+
+		return new ResponseEntity<ErrorDetail>( ed , HttpStatus.BAD_REQUEST );
+	}
+
+
+
+	@ExceptionHandler( VaccineRegistrationException.class )
+	public ResponseEntity<ErrorDetail> vaccineRegistrationExceptionHandler(  VaccineRegistrationException vre , WebRequest wr ){
+
+		ErrorDetail ed = new ErrorDetail( vre.getMessage() , wr.getDescription(false) );
+
+		return new ResponseEntity<ErrorDetail>( ed , HttpStatus.BAD_REQUEST );
+	}
+
+
+}
+2.4.IdCardException
+package com.coviwin.exception;
+
+public class IdCardException extends Exception {
+
+	public IdCardException() {
+		// TODO Auto-generated constructor stub
+	}
+	private static final long serialVersionUID = 1L;
+
+
+	public IdCardException() { }
+
+
+	public IdCardException(String msg) {
+		super(msg);
+	}
+}
+2.5.MemberException
+ackage com.coviwin.exception;
+public class MemberException extends Exception {
+	private static final long serialVersionUID = 1L;
+
+
+	public MemberException(String msg) {
+		super(msg);
+	}
+
+}
+2.6.VaccinationCenter
+package com.coviwin.exception;
+
+import lombok.NoArgsConstructor;
+
+@NoArgsConstructor
+public class VaccinationCenterException extends Exception {
+
+	private static final long serialVersionUID = 1L;
+
+	public VaccinationCenterException(String msg) {
+		super(msg);
+	}
+}
+2.7.VaccineException
+package com.coviwin.exception;
+
+public class VaccineException extends Exception {
+
+	public VaccineException(String msg) {
+		super(msg);
+	}
+}
+2.8.VaccineInventoryException
+package com.coviwin.exception;
+
+public class VaccineInventoryException extends Exception {
+	private static final long serialVersionUID = 1L;
+
+	public VaccineInventoryException() {
+		// TODO Auto-generated constructor stub
+	}
+	
+	public VaccineInventoryException(String message) {
+		super(message);
+	}
+	
+}
+2.9.VaccineRegistration
+package com.coviwin.exception;
+
+public class VaccineRegistrationException extends  Exception {
+	private static final long serialVersionUID = 1L;
+	public VaccineRegistrationException() {
+		// TODO Auto-generated constructor stub
+	}
+	public VaccineRegistrationException(String msg) {
+		super(msg);
+	}
+}
+3.Implementation
+3.1.AppointmentService
+package com.coviwin.implementation;
+import java.util.List;
+import java.util.Optional;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import com.coviwin.exception.ApppintmentException;
+import com.coviwin.model.Appointment;
+import com.coviwin.model.Member;
+import com.coviwin.model.VaccinationCenter;
+import com.coviwin.repo.AppointmentRepo;
+import com.coviwin.service.AppointmentService;
+@Service
+public class AppointmentServiceImpl implements AppointmentService {
+	@Autowired
+	private AppointmentRepo appRepo;
+	
+	
+	@Override
+	public List<Appointment> allAppointment() throws ApppintmentException {
+		List<Appointment> list = appRepo.findAll();
+		
+		if(list.isEmpty()) {
+			throw new ApppintmentException("No Appointment found..");
+		}
+		
+		return list;
+	}
+
+	
+
+	@Override
+	public Appointment getAppointment(Long bookingId) throws ApppintmentException {
+
+@@ -70,6 +70,7 @@ public Appointment updateAppointment(Appointment app) throws ApppintmentExceptio
+		if(opt.isPresent()) {
+
+			Member member = app.getMember();
+
+
+			member.getAppointments().add(app); // associating member with appointment
+
+		    VaccinationCenter vacCenter = app.getVaccinationCenter();
+		    
+		    vacCenter.getAppointments().add(app); // associating VaccinationCenter with appointment
+		    
+			
+			return appRepo.save(app);
+			
+		}else
+			throw new ApppintmentException("No appointment is present with appoinment details : " + app);
+		
+	
+		
+	}
+	
+	@Override
+	public Boolean deleteAppointment(Appointment app) throws ApppintmentException {
+		
+        Optional<Appointment> opt = appRepo.findById(app.getBookingID());
+		
+		if(opt.isPresent()) {
+			
+			appRepo.delete(app);
+			return true;
+			
+		}else
+			throw new ApppintmentException("No appointment is present with appoinment details : " + app);
+		
+	}
+}
+3.2.IdCardService
+package com.coviwin.implementation;
+
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+@@ -39,7 +41,7 @@ public IdCard getPanCardByNumber(String panNo)throws IdCardException {
+	}
+
+	@Override
+	public IdCard getAdharCardByNo(Long adharNo)throws IdCardException {
+	public List<IdCard> getAdharCardByNo(Long adharNo)throws IdCardException {
+
+//		IdCard idcard = idCardRepo.getIdCardByAadharNo(adharNo);
+//		
+@@ -50,12 +52,13 @@ public IdCard getAdharCardByNo(Long adharNo)throws IdCardException {
+
+		AdharCard adharCard = new AdharCard(adharNo);
+
+		IdCard idcard = idCardRepo.findByAdharCard(adharCard);
+		List<IdCard> idcard = idCardRepo.findByAdharcard( adharCard );
+
+		if (idcard == null)
+		if (idcard == null || idcard.isEmpty() )
+			throw new IdCardException("Idcard not found with the  adharNo:" + adharNo);
+		else
+			return idcard;
+
+
+		return idcard;
+
+
+	}
+@@ -64,22 +67,20 @@ public IdCard getAdharCardByNo(Long adharNo)throws IdCardException {
+	public IdCard addIdCard(IdCard id)throws IdCardException {
+
+		// checking IdCard based on AdharCard
+		IdCard id1 = idCardRepo.findByAdharCard(id.getAdharcard());
+		List< IdCard > id1 = idCardRepo.findByAdharcard( id.getAdharcard() );
+
+		if(id1 == null) {
+		if(id1 == null || id1.isEmpty() ) {
+
+			// checking IdCard based on Pancard
+			IdCard id2 = idCardRepo.findByPancard(id.getPancard());
+
+			if(id2 == null) {
+
+				  return idCardRepo.save(id);
+			if( id2 == null )  return idCardRepo.save(id);
+
+			}else
+				throw new IdCardException("IdCard already registered with id : " + id.getId());
+
+		}else
+			throw new IdCardException("IdCard already registered with id : " + id.getId());
+
+		}
+
+		throw new IdCardException("IdCard already registered with id : " + id.getId());
+
+
+
+	}
+}
+3.3.MemberService
+package com.coviwin.implementation;
+
+import java.util.Optional;
+import java.util.List;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import com.coviwin.exception.MemberException;
+import com.coviwin.model.AdharCard;
+import com.coviwin.model.Appointment;
+import com.coviwin.model.IdCard;
+import com.coviwin.model.Member;
+import com.coviwin.model.PanCard;
+import com.coviwin.model.VaccineRegistration;
+import com.coviwin.repo.MemberRepo;
+import com.coviwin.service.MemberService;
+
+
+@Service 
+public class MemberServiceImpl  implements MemberService {
+
+	@Autowired
+	MemberRepo memRepo;
+
+	@Override
+	public Member getMemberbyId(Integer idCardID) throws MemberException {
+	 IdCard op  = memRepo.findByIdCard(idCardID);
+	 if(op==null)
+		 throw new MemberException("Invalid ID card");
+	 return op.getMember();
+	}
+
+	@Override
+	public Member getMemberByAdharNo(Long adharNo) throws MemberException {
+	 List<Member> allMembers = memRepo.findAll();
+	 Member mem = null;
+	   for(Member ele: allMembers)
+	   {
+		    IdCard idcard = ele.getIdCard();
+		    AdharCard adharCard = idcard.getAdharcard();
+		    if (adharCard.getAdharNo()==adharNo)
+		    {  
+		    	mem = ele;
+		        break;	
+		    }
+
+	   } 
+		if(mem==null)
+			 throw new MemberException("Invalid Adhar NO.");
+
+		return mem;
+	}
+
+	@Override
+	public Member getMemberByPanNo(String panNo) throws MemberException {
+
+		List<Member> allMembers = memRepo.findAll();
+		 Member mem = null;
+		   for(Member ele: allMembers)
+		   {
+			    IdCard idcard = ele.getIdCard();
+			    PanCard panCard = idcard.getPancard();
+			    if (panCard.getPanNo()==panNo)
+			    {  
+			    	mem = ele;
+			        break;	
+			    }
+
+		   } 
+			if(mem==null)
+				 throw new MemberException("Invalid Pan NO.");
+
+			return mem;
+	}
+
+	@Override
+	public Member addMember(Member member) throws MemberException {
+//		
+//		Member mem = memRepo.save(member);
+//		if(mem==null)
+//			throw new MemberException("Unable to save this member");
+//		return mem;
+
+		memRepo.findById(member.getMemberId()).orElseThrow(() -> new MemberException("Member is already registered with memberId : " + member.getMemberId()));
+
+		List<Appointment> appList = member.getAppointments();
+
+		for(Appointment app : appList) {
+
+			app.setMember(member); // associating each appointment with member 
+		}
+
+		VaccineRegistration vaccineRegistration =member.getVaccineRegistration();
+		vaccineRegistration.getMembers().add(member);  // associating vaccineRegistration with member 
+
+		return memRepo.save(member);
+	}
+
+	@Override
+	public Member updateMember(Member member) throws MemberException {
+
+		Optional<Member> op = memRepo.findById(member.getMemberId());
+
+		if(op.isEmpty())
+			throw new MemberException("Member not found");
+
+        List<Appointment> appList = member.getAppointments();
+
+		for(Appointment app : appList) {
+
+			app.setMember(member); // associating each appointment with member 
+		}
+
+		VaccineRegistration vaccineRegistration =member.getVaccineRegistration();
+		vaccineRegistration.getMembers().add(member);  // associating vaccineRegistration with member 
+
+		return memRepo.save(member);
+	}
+
+	@Override
+	public Boolean deleteMember(Member member) throws MemberException {
+		Optional<Member> op = memRepo.findById(member.getMemberId());
+		if(op.isEmpty())
+			throw new MemberException("Member not found");
+
+
+	  memRepo.deleteById(member.getMemberId());
+	  return true;
+	}
+
+}
+3.4.VaccinationCenter
+package com.coviwin.implementation;
+
+import java.util.List;
+import java.util.Optional;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import com.coviwin.exception.MemberException;
+import com.coviwin.exception.VaccinationCenterException;
+import com.coviwin.model.Appointment;
+import com.coviwin.model.VaccinationCenter;
+import com.coviwin.model.VaccineCount;
+import com.coviwin.model.VaccineInventory;
+import com.coviwin.repo.VaccinationCenterRepo;
+import com.coviwin.service.VaccinationCenterService;
+
+
+@Service
+public class VaccinationCenterServiceImpl  implements VaccinationCenterService{
+
+	@Autowired
+	VaccinationCenterRepo vcrepo;
+
+	@Override
+	public List<VaccinationCenter> getAllVaccineCenters() throws VaccinationCenterException {
+		List<VaccinationCenter> vcall =vcrepo.findAll();
+		if(vcall.size()==0)
+			throw new VaccinationCenterException("There are no centers available");
+
+		return vcall;
+	}
+
+	@Override
+	public VaccinationCenter getVaccineCenters(Integer centerid) throws VaccinationCenterException {
+	java.util.Optional<VaccinationCenter> op = vcrepo.findById(centerid);
+	if(op.isPresent())
+		return op.get();
+
+	throw new VaccinationCenterException("No center found");
+	}
+
+	@Override
+	public VaccinationCenter addVaccineCenter(VaccinationCenter center) throws VaccinationCenterException {		
+
+		vcrepo.findById(center.getCode()).orElseThrow(() -> new VaccinationCenterException("VaccinationCenterException is already registered with VaccinationCenterExceptionId : " + center.getCode()));
+
+        List<Appointment> appList = center.getAppointments();
+
+		for(Appointment app : appList) {
+
+			app.setVaccinationCenter(center); // associating each appointment with VaccinationCenter 
+		}
+
+		center.getVaccineInventory().getVaccinationCenters().add(center); // associating VaccineInventory with VaccinationCenter 
+
+		return vcrepo.save(center);
+
+//		VaccinationCenter vc = vcrepo.save(center);
+//		
+//		if(vc==null)
+//			throw new VaccinationCenterException("Unable to save");
+//		
+//		return vc;
+	}
+
+	@Override
+	public VaccinationCenter updateVaccineCenter(VaccinationCenter center) throws VaccinationCenterException {
+
+		Optional<VaccinationCenter> op = vcrepo.findById(center.getCode());
+
+	    if(op.isPresent())
+	    {
+
+	    	List<Appointment> appList = center.getAppointments();
+
+			for(Appointment app : appList) {
+
+				app.setVaccinationCenter(center); // associating each appointment with VaccinationCenter 
+			}
+
+			center.getVaccineInventory().getVaccinationCenters().add(center); // associating VaccineInventory with VaccinationCenter 
+
+	    	return vcrepo.save(center);
+	    }	
+
+	    throw new VaccinationCenterException("No center found to update");
+	}
+
+	@Override
+	public VaccinationCenter deleteVaccineCenter(VaccinationCenter center) throws VaccinationCenterException {
+		Optional<VaccinationCenter> op = vcrepo.findById(center.getCode());
+	    if(op.isPresent())
+	    {
+	    	vcrepo.deleteById(center.getCode());
+	    	return op.get();
+	    }
+
+		throw new VaccinationCenterException("No Center found to update");
+	}
+
+
+
+
+
+}
+3.4.VaccineRegistration
+package com.coviwin.implementation;
+import java.util.List;
+import java.util.Optional;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import com.coviwin.exception.VaccineRegistrationException;
+import com.coviwin.model.Member;
+import com.coviwin.model.VaccineRegistration;
+import com.coviwin.repo.VaccineRegistrationRepo;
+import com.coviwin.service.VaccineRegistrationService;
+
+import lombok.Data;
+
+@Data
+@Service
+public class VaccineRegistrationSerivceImpl implements VaccineRegistrationService {
+
+public VaccineRegistration getVaccineRegistration(Long mobileNo) throws VaccineR
+       return vacRegRepo.findById(mobileNo).orElseThrow(() -> new VaccineRegistrationException("No VaccineRegistration found with mobileNO : " + mobileNo));
+	}
+
+
+	@Override
+	public List<Member> getAllMember(Long mobileNo) throws VaccineRegistrationException {
+
+//          VaccineRegistration vacReg = vacRegRepo.findById(mobileNo).orElseThrow(() -> new VaccineRegistrationException("No VaccineRegistration found with mobileNO : " + mobileNo));
+//          
+//          return vacReg.getMembers();
+
+
+		List<Member> list = vacRegRepo.getMembersByMobileNo(mobileNo);
+
+public Boolean deleteVaccineRegistration(VaccineRegistration reg) throws Vaccine
+
+	}
+
+
+}
+4.Model
+4.1.AdharCard
+package com.coviwin.model;
+
+import javax.validation.constraints.Digits;
+import javax.validation.constraints.Pattern;
+import javax.validation.constraints.Size;
+//import javax.validation.constraints.Pattern;
+//import javax.validation.constraints.Size;
+
+import lombok.AllArgsConstructor;
+import lombok.Data;
+@NoArgsConstructor
+
+public class AdharCard {
+//	@Size(max = 14, message = "Addhar card number length is maximum 12!")
+
+//	@Size(max = 14, message = "Adhar card number length is maximum 12!")
+//	@Pattern(regexp = "^[2-9]{1}[0-9]{3}\\s[0-9]{4}\\s[0-9]{4}$", message = "Adhar card Number is Invalid!")
+
+	@Digits(integer = 12,fraction = 12,message = "Length must be 12")
+	private long adharNo;
+}
+4.2.Appointment
+package com.coviwin.model;
+import java.time.LocalDate;
+import com.coviwin.enums.Slot;
+import javax.persistence.CascadeType;
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+import javax.persistence.ManyToOne;
+import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.Pattern;
+import javax.validation.constraints.Size;
+
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.coviwin.enums.Slot;
+
+import lombok.AllArgsConstructor;
+import lombok.Data;
+public class Appointment {
+
+	Slot slot;
+
+	@JsonIgnore
+//	@JsonIgnore
+	@ManyToOne(cascade = CascadeType.ALL)
+	Member member;
+
+	@ManyToOne(cascade = CascadeType.ALL)
+	VaccinationCenter vaccinationCenter;
+
+
+}
+4.3.IdCard
+package com.coviwin.model;
+import java.time.LocalDate;
+import javax.persistence.CascadeType;
+import javax.persistence.Embedded;
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+import javax.persistence.OneToOne;
+import javax.persistence.UniqueConstraint;
+import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Pattern;
+public class IdCard {
+	@Size(min = 6, max = 8)
+	private String pincode;
+
+	@JsonIgnore
+//	@JsonIgnore
+	@OneToOne(cascade = CascadeType.ALL, mappedBy = "idCard")
+	private Member member;
+
+ public class IdCard {
+	@Embedded
+	PanCard pancard;
+
+
+}
+4.4.Member
+package com.coviwin.model;
+import javax.validation.constraints.Pattern;
+import javax.validation.constraints.Size;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+public class PanCard {
+	
+	@Size(max=10,message="Pan card number length is maximum 10!")
+	@Pattern(regexp = "[A-Z]{5}[0-9]{4}[A-Z]{1}",message="Pan Card Number is Invalid!")
+	private String panNo;
+
+	public String getPanNo() {
+		return panNo;
+	}
+
+	public void setPanNo(String panNo) {
+		this.panNo = panNo;
+	}
+
+}
+4.5.PanCard
+package com.coviwin.model;
+import javax.validation.constraints.Pattern;
+import javax.validation.constraints.Size;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+public class PanCard {
+	
+	@Size(max=10,message="Pan card number length is maximum 10!")
+	@Pattern(regexp = "[A-Z]{5}[0-9]{4}[A-Z]{1}",message="Pan Card Number is Invalid!")
+	private String panNo;
+
+	public String getPanNo() {
+		return panNo;
+	}
+
+	public void setPanNo(String panNo) {
+		this.panNo = panNo;
+	}
+4.6.VaccinationCenter
+package com.coviwin.model;
+
+import java.time.LocalDate;
+import java.util.List;
+
+import javax.persistence.CascadeType;
+import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Size;
+
+import org.hibernate.annotations.GeneratorType;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
+ public class VaccinationCenter {
+	@Size(min = 6, max = 8)
+	private String pincode;
+
+	@JsonIgnore
+//	@JsonIgnore
+	@OneToMany(cascade = CascadeType.ALL, mappedBy = "vaccinationCenter")
+	private List<Appointment> appointments;
+
+	@ManyToOne(cascade = CascadeType.ALL)
+	@JsonIgnore
+//	@JsonIgnore
+	private VaccineInventory vaccineInventory;
+
+
+
+}
+4.7.Vaccine.Java
+package com.coviwin.model;
+import java.util.List;
+import javax.persistence.CascadeType;
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+import javax.persistence.OneToMany;
+import javax.persistence.OneToOne;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.NonNull;
+import lombok.ToString;
+@Entity
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+@ToString
+public class Vaccine {
+	@Id
+	@GeneratedValue(strategy = GenerationType.AUTO)
+	private Integer vaccineid;
+	
+	@NonNull
+	private String vaccineName;
+	private String description;
+
+	@JsonIgnore
+//	@JsonIgnore
+	@OneToOne(cascade = CascadeType.ALL, mappedBy = "vaccine")
+	private VaccineCount vaccinecount;
+
+	@JsonIgnore
+//	@JsonIgnore
+	@OneToMany(cascade = CascadeType.ALL, mappedBy = "vaccine")
+	private List<Member> member;
+
+
+
+}
+4.8.VaccineCount
+package com.coviwin.model;
+import javax.persistence.CascadeType;
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+import javax.persistence.ManyToOne;
+import javax.persistence.OneToOne;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+@Entity
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class VaccineCount {
+	@Id
+	@GeneratedValue(strategy = GenerationType.AUTO)
+	private Integer vaccineCountId;
+	private Integer vaccineId;
+	private Integer quantity;
+	private Double price;
+	@OneToOne(cascade = CascadeType.ALL)
+	private Vaccine vaccine;
+
+	@JsonIgnore
+//	@JsonIgnore
+	@ManyToOne(cascade = CascadeType.ALL)
+	private VaccineInventory vaccineInventory;
+}
+4.9.VaccineInventory
+package com.coviwin.model;
+import java.time.LocalDate;
+import java.util.List;
+
+import javax.persistence.CascadeType;
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+import javax.persistence.OneToMany;
+import javax.validation.constraints.NotNull;
+
+public class VaccineInventory {
+
+	@Id
+	@GeneratedValue(strategy = GenerationType.AUTO)
+	private Integer vaccineInventoryId;
+
+	@JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy")
+public class VaccineInventory {
+
+	@OneToMany(cascade = CascadeType.ALL, mappedBy = "vaccineInventory")
+	private List<VaccinationCenter> vaccinationCenters;
+
+}
+4.10.VaccineRegistration
+package com.coviwin.repo;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+
+import org.springframework.stereotype.Repository;
+import java.util.List;
+import com.coviwin.model.AdharCard;
+import com.coviwin.model.IdCard;
+import com.coviwin.model.PanCard;
+
+@Repository
+public interface IdCardServiceRepo extends JpaRepository<IdCard, Integer> {
+
+//	@Query("select i from IdCard i where i.panNo=?1")
+public interface IdCardServiceRepo extends JpaRepository<IdCard, Integer> {
+//	@Query("select i from IdCard i where i.adharNo=?1")
+//	public IdCard getIdCardByAadharNo(Long adharNo);
+
+	public IdCard findByAdharCard(AdharCard adharcard);
+//	public IdCard findByAdharCard( AdharCard adharcard );
+
+	public List<IdCard> findByAdharcard( AdharCard adharcard );
+
+}
+5.Repo
+5.1.IdCardServiceRepo
+package com.coviwin.repo;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+
+import org.springframework.stereotype.Repository;
+import java.util.List;
+import com.coviwin.model.AdharCard;
+import com.coviwin.model.IdCard;
+import com.coviwin.model.PanCard;
+
+@Repository
+public interface IdCardServiceRepo extends JpaRepository<IdCard, Integer> {
+
+//	@Query("select i from IdCard i where i.panNo=?1")
+ public interface IdCardServiceRepo extends JpaRepository<IdCard, Integer> {
+//	@Query("select i from IdCard i where i.adharNo=?1")
+//	public IdCard getIdCardByAadharNo(Long adharNo);
+
+	public IdCard findByAdharCard(AdharCard adharcard);
+//	public IdCard findByAdharCard( AdharCard adharcard );
+
+	public List<IdCard> findByAdharcard( AdharCard adharcard );
+
+}
+5.2.MemberRepo
+package com.coviwin.repo;
+
+public interface MemberRepo {
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import com.coviwin.model.IdCard;
+import com.coviwin.model.Member;
+
+public interface MemberRepo extends JpaRepository<Member,Integer> {
+
+	public IdCard findByIdCard(int idCardId) ;
+
+
+}
+5.3.Vaccinationcenter
+package com.coviwin.repo;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import com.coviwin.model.VaccinationCenter;
+
+public interface VaccinationCenterRepo extends JpaRepository<VaccinationCenter, Integer> {
+public interface VaccinationCenterRepo extends JpaRepository <VaccinationCenter,Integer> {
+
+}
+5.4.VaccineRegistration
+package com.coviwin.repo;
+import java.util.List;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import com.coviwin.model.Member;
+import com.coviwin.model.VaccineRegistration;
+
+public interface VaccineRegistrationRepo extends JpaRepository<VaccineRegistration, Long> {
+
+	@Query("select v.members from VaccineRegistration v where v.mobileNo=?1")
+	@Query("select v.members from VaccineRegistration v where v.mobileno=?1")
+	public List<Member> getMembersByMobileNo(Long mobileNo);
+
+
+
+}
+5.5.VaccineRepo
+package com.coviwin.repo;
+
+import java.util.List;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import com.coviwin.model.Vaccine;
+
+public interface VaccineRepo extends JpaRepository<Vaccine,Integer>{
+
+	public List<Vaccine> findByVaccineName(String vaccineName);
+}
+6.Service
+6.1.AppointmentService
+package com.coviwin.service;
+import java.util.List;
+import com.coviwin.exception.ApppintmentException;
+import com.coviwin.model.Appointment;
+public interface AppointmentService {
+
+	public List<Appointment> allAppointment()throws ApppintmentException;
+
+
+	public Appointment getAppointment(Long bookingId)throws ApppintmentException;
+
+	public Appointment addAppointment(Appointment app)throws ApppintmentException;
+
+	public Appointment updateAppointment(Appointment app)throws ApppintmentException;
+
+	public Boolean deleteAppointment(Appointment app)throws ApppintmentException;
+	public Boolean deleteAppointment(Appointment app)throws ApppintmentException; 
+
+}
+6.2.IdCardService
+package com.coviwin.service;
+
+import java.util.List;
+
+import com.coviwin.exception.IdCardException;
+import com.coviwin.model.IdCard;
+
+public interface IdCardService {
+
+	public IdCard getPanCardByNumber(String panNo) throws IdCardException;
+	public IdCard getAdharCardByNo(Long adharNo)throws IdCardException;
+	//all m
+	public IdCard getPanCardByNumber(String panNo) throws IdCardException; 
+	public List<IdCard> getAdharCardByNo(Long adharNo)throws IdCardException;
+	public IdCard addIdCard(IdCard id) throws IdCardException;
+
+}
+6.3MemberService
+package com.coviwin.service;
+import com.coviwin.exception.MemberException;
+import com.coviwin.model.Member;
+
+public interface MemberService {
+
+	// m
+
+	public Member getMemberbyId(Integer idCardID ) throws MemberException;
+	public Member getMemberbyId( Integer idCardID ) throws MemberException;
+	public Member getMemberByAdharNo(Long adharNo) throws MemberException;
+	public Member getMemberByPanNo( String panNo ) throws MemberException;
+	public Member addMember( Member member ) throws MemberException;
+	public Member updateMember( Member member ) throws MemberException;
+	public Boolean deleteMember( Member member ) throws MemberException;
+	
+}
+6.4.VaccinationCentreService
+package com.coviwin.service;
+
+import java.util.List;
+
+import com.coviwin.exception.VaccinationCenterException;
+import com.coviwin.model.VaccinationCenter;
+
+public interface VaccinationCenterService {
+
+	public List<VaccinationCenter> getAllVaccineCenters( );
+	public VaccinationCenter getVaccineCenters(Integer centerid);
+	public VaccinationCenter addVaccineCenter(VaccinationCenter center);
+	public VaccinationCenter updateVaccineCenter(VaccinationCenter center);
+	public VaccinationCenter deleteVaccineCenter(VaccinationCenter center);
+	public List<VaccinationCenter> getAllVaccineCenters( )throws VaccinationCenterException;
+	public VaccinationCenter getVaccineCenters(Integer centerid)throws VaccinationCenterException;
+	public VaccinationCenter addVaccineCenter(VaccinationCenter center)throws VaccinationCenterException;
+	public VaccinationCenter updateVaccineCenter(VaccinationCenter center)throws VaccinationCenterException;
+	public VaccinationCenter deleteVaccineCenter(VaccinationCenter center)throws VaccinationCenterException;
+
+
+}
+6.5.VaccinationInventoryService
+package com.coviwin.service;
+import java.time.LocalDate;
+import java.util.List;
+import com.coviwin.exception.VaccineInventoryException;
+import com.coviwin.model.VaccinationCenter;
+import com.coviwin.model.Vaccine;
+import com.coviwin.model.VaccineCount;
+import com.coviwin.model.VaccineInventory;
+public interface VaccineInventoryService {
+	public List<VaccineInventory> allVaccineInventory()throws VaccineInventoryException;
+	
+	public VaccineInventory addVaccineCount(VaccineInventory vacInv, VaccineCount vacineCount)throws VaccineInventoryException;
+	
+	public VaccineInventory addVaccineInventoryByCenter(Integer centerId,VaccineInventory vInventory)throws VaccineInventoryException;
+	
+	public VaccineInventory updateVaccineInventory(Integer vaccineInventory,VaccineInventory vInventory)throws VaccineInventoryException;
+	
+	public Boolean deleteVaccineInventory(Integer vaccineInventory)throws VaccineInventoryException;
+	
+	public List<VaccineInventory> getVaccineInventoryByDate(LocalDate date)throws VaccineInventoryException;
+
+	public List<VaccineInventory> getVaccineInventoryByVaccine(Vaccine vaccine)throws VaccineInventoryException;
+
+
+}
+6.6.VaccinationRegistrationService
+package com.coviwin.service;
+import java.time.LocalDate;
+import java.util.List;
+import com.coviwin.exception.VaccineInventoryException;
+import com.coviwin.model.VaccinationCenter;
+import com.coviwin.model.Vaccine;
+import com.coviwin.model.VaccineCount;
+import com.coviwin.model.VaccineInventory;
+public interface VaccineInventoryService {
+	public List<VaccineInventory> allVaccineInventory()throws VaccineInventoryException;
+	
+	public VaccineInventory addVaccineCount(VaccineInventory vacInv, VaccineCount vacineCount)throws VaccineInventoryException;
+	
+	public VaccineInventory addVaccineInventoryByCenter(Integer centerId,VaccineInventory vInventory)throws VaccineInventoryException;
+	
+	public VaccineInventory updateVaccineInventory(Integer vaccineInventory,VaccineInventory vInventory)throws VaccineInventoryException;
+	
+	public Boolean deleteVaccineInventory(Integer vaccineInventory)throws VaccineInventoryException;
+	
+	public List<VaccineInventory> getVaccineInventoryByDate(LocalDate date)throws VaccineInventoryException;
+
+	public List<VaccineInventory> getVaccineInventoryByVaccine(Vaccine vaccine)throws VaccineInventoryException;
+
+
+}
+6.7.VaccineService
+package com.coviwin.service;
+
+import java.util.List;
+
+import com.coviwin.exception.VaccineException;
+import com.coviwin.model.Vaccine;
+
+public interface VaccineService {
+
+	public Vaccine allVaccine();
+	public Vaccine getVaccineByName( String vaccineName );
+	public Vaccine getVaccineById(Integer vaccineId);
+	public Vaccine addVaccine(Vaccine vaccine);
+	public Vaccine updateVaccine(Vaccine vaccine);
+	public Boolean deleteVaccine(Vaccine vaccine );
+
+	public List<Vaccine> allVaccine()throws VaccineException;
+	public List<Vaccine> getVaccineByName( String vaccineName )throws VaccineException;
+	public Vaccine getVaccineById(Integer vaccineId)throws VaccineException;
+	public Vaccine addVaccine(Vaccine vaccine)throws VaccineException;
+	public Vaccine updateVaccine(Vaccine vaccine)throws VaccineException;
+	public Boolean deleteVaccine(Vaccine vaccine )throws VaccineException;
+
+
+}
+7.Application.properties
+Server.port = 8888
+
+#db specific properties
+spring.datasource.url=jdbc:mysql://localhost:3306/Springdb
+spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver
+spring.datasource.username=root
+spring.datasource.password=aman
+
+#ORM s/w specific properties
+spring.jpa.hibernate.ddl-auto=update
+spring.jpa.show-sql=true
+
+spring.mvc.pathmatch.matching-strategy = ANT_PATH_MATCHER
+
+8.MainClass
+CovidVaccinationServiceApplication
+
+package com.coviwin;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+import springfox.documentation.swagger2.annotations.EnableSwagger2;
+
+@EnableSwagger2
+@SpringBootApplication
+public class CovidVaccinationServiceApplication {
+
+	public static void main(String[] args) {
+		SpringApplication.run(CovidVaccinationServiceApplication.class, args);
+	}
+}
